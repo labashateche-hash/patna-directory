@@ -5,151 +5,225 @@ from oauth2client.service_account import ServiceAccountCredentials
 # 1. PAGE CONFIG
 st.set_page_config(page_title="Patna City Guide", page_icon="🏙️", layout="wide")
 
-# 2. CONNECT TO GOOGLE SHEET (Database Function)
+# 2. DATABASE CONNECTION (Secrets wala part)
 def get_db():
-    # Streamlit Secrets se Key nikalna (Cloud par ye secure hota hai)
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
-    client = gspread.authorize(creds)
-    # Sheet ka naam 'PatnaDB' hona chahiye
-    sheet = client.open("PatnaDB").sheet1 
-    return sheet
-
-# Data Load karna (Cache use karte hain taaki website slow na ho)
-def load_data():
     try:
-        sheet = get_db()
-        data = sheet.get_all_records()
-        return data
+        # Secrets se connect karna
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+        client = gspread.authorize(creds)
+        sheet = client.open("PatnaDB").sheet1
+        return sheet
     except Exception as e:
-        return []
+        st.error(f"Database Error: {e}")
+        return None
 
-# Data Save karna
+def load_data():
+    sheet = get_db()
+    if sheet:
+        return sheet.get_all_records()
+    return []
+
 def add_to_db(entry):
     sheet = get_db()
-    # List format mein data append karna
-    row = [entry['Name'], entry['Category'], entry['Offer'], entry['Phone'], entry['Address'], entry['Premium'], entry['Image']]
-    sheet.append_row(row)
+    if sheet:
+        row = [entry['Name'], entry['Category'], entry['Offer'], entry['Phone'], entry['Address'], entry['Premium'], entry['Image']]
+        sheet.append_row(row)
 
-# 3. CSS & SESSION SETUP
-if 'page' not in st.session_state: st.session_state['page'] = 'home'
-
+# 3. CUSTOM CSS (Design Fixes)
 st.markdown("""
 <style>
-    /* Same Professional CSS */
+    /* Clean UI */
     .stApp {background-color: #f8f9fa;}
     #MainMenu, footer, header {visibility: hidden;}
-    .business-card {background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 20px; border: 1px solid #eee;}
-    .card-img {width: 100%; height: 180px; object-fit: cover;}
-    .card-content {padding: 15px;}
-    .card-title {font-size: 18px; font-weight: 700; color: #333; margin-bottom: 5px;}
-    .card-offer {color: #e74c3c; font-weight: 600; font-size: 14px; background: #fff5f5; padding: 4px 8px; border-radius: 4px; display: inline-block;}
-    .btn-row {display: flex; gap: 10px; margin-top: 15px;}
-    .btn {flex: 1; text-align: center; padding: 8px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none;}
-    .btn-call {background: #3498db; color: white !important;}
-    .btn-wa {background: #27ae60; color: white !important;}
-    .btn-lock {background: #e0e0e0; color: #999 !important; cursor: not-allowed;}
-    .premium-badge {float: right; font-size: 12px; background: #ffd700; padding: 2px 6px; border-radius: 4px; color: #333;}
+    
+    /* Card Design */
+    .business-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        overflow: hidden;
+        border: 1px solid #eee;
+        transition: transform 0.2s;
+    }
+    .business-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .card-img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+    }
+    .card-content {
+        padding: 15px;
+    }
+    .card-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .card-offer {
+        background-color: #fff5f5;
+        color: #e74c3c;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 13px;
+        font-weight: bold;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+    .btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    /* Buttons */
+    .btn {
+        flex: 1;
+        text-align: center;
+        padding: 8px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: bold;
+        color: white !important;
+    }
+    .btn-call {background-color: #3498db;}
+    .btn-wa {background-color: #27ae60;}
+    .btn-lock {background-color: #bdc3c7; cursor: not-allowed;}
+    
+    /* Navbar Button */
+    .nav-btn {
+        background-color: #ff4b4b;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: bold;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# 4. NAVBAR
-col1, col2, col3 = st.columns([1, 4, 1])
-with col1: st.markdown("### 🏙️ PatnaGuide")
-with col3:
+# 4. SESSION STATE
+if 'page' not in st.session_state:
+    st.session_state['page'] = 'home'
+
+# 5. NAVBAR
+c1, c2, c3 = st.columns([1, 4, 1])
+with c1:
+    st.markdown("### 🏙️ PatnaGuide")
+with c3:
     if st.session_state['page'] == 'home':
-        if st.button("➕ List Business"): st.session_state['page'] = 'add'
+        if st.button("➕ List Business"):
+            st.session_state['page'] = 'add'
+            st.rerun()
     else:
-        if st.button("🏠 Home"): st.session_state['page'] = 'home'
+        if st.button("🏠 Home"):
+            st.session_state['page'] = 'home'
+            st.rerun()
 st.markdown("---")
 
-# 5. PAGE LOGIC
+# 6. PAGE LOGIC
 if st.session_state['page'] == 'home':
-    # Data load karein
+    
+    # --- HOME PAGE ---
     data = load_data()
     
     if not data:
-        st.info("Abhi koi listing nahi hai. 'List Business' par click karke pehli listing dalein!")
-    
+        st.info("Loading Data... (Agar der lag rahi hai to refresh karein)")
     else:
-        # Hero Section (Sirf TRUE Premium wale)
-        st.markdown("### 🔥 Featured Spots")
-        premium_ads = [d for d in data if str(d.get('Premium')).lower() == 'true']
-        
-        if premium_ads:
-            cols = st.columns(len(premium_ads) if len(premium_ads) < 3 else 3)
-            for i, ad in enumerate(premium_ads[:3]):
-                with cols[i]:
-                    st.image(ad['Image'], use_column_width=True)
-                    st.markdown(f"**{ad['Name']}**")
-                    st.caption(ad['Offer'])
-        
-        # Category Listing
+        # Categories
         categories = list(set([d['Category'] for d in data]))
+        
         for cat in categories:
             st.markdown(f"#### {cat}")
             cat_data = [d for d in data if d['Category'] == cat]
             
-            c1, c2, c3 = st.columns(3)
-            rows = [c1, c2, c3]
-            
-            for idx, item in enumerate(cat_data):
-                with rows[idx % 3]:
-                    # Check Premium Status
-                    is_prem = str(item.get('Premium')).lower() == 'true'
+            # Grid of 3
+            cols = st.columns(3)
+            for i, item in enumerate(cat_data):
+                with cols[i % 3]:
+                    # Logic for Premium Buttons
+                    is_prem = str(item['Premium']).lower() == 'true'
                     
                     if is_prem:
-                        btns = f"""
-                        <a href="tel:{item['Phone']}" class="btn btn-call">📞 Call</a>
-                        <a href="https://wa.me/{item['Phone']}" class="btn btn-wa">💬 Chat</a>
-                        """
+                        btns = f"""<a href="tel:{item['Phone']}" class="btn btn-call">📞 Call</a>
+<a href="https://wa.me/{item['Phone']}" class="btn btn-wa">💬 Chat</a>"""
                     else:
-                        btns = f"""
-                        <div class="btn btn-lock">🔒 Phone</div>
-                        <div class="btn btn-lock">🔒 Chat</div>
-                        """
-                    
-                    html = f"""
-                    <div class="business-card">
-                        <img src="{item['Image']}" class="card-img">
-                        <div class="card-content">
-                            {'<span class="premium-badge">⭐ PRO</span>' if is_prem else ''}
-                            <div class="card-title">{item['Name']}</div>
-                            <div style="font-size:12px; color:#666; margin-bottom:8px;">📍 {item['Address']}</div>
-                            <div class="card-offer">{item['Offer']}</div>
-                            <div class="btn-row">{btns}</div>
-                        </div>
-                    </div>
-                    """
-                    st.markdown(html, unsafe_allow_html=True)
+                        btns = f"""<div class="btn btn-lock">🔒 Phone</div>
+<div class="btn btn-lock">🔒 Chat</div>"""
+
+                    # HTML Card (Indentation Removed to fix display bug)
+                    card_html = f"""
+<div class="business-card">
+<img src="{item['Image']}" class="card-img">
+<div class="card-content">
+<div class="card-title">{item['Name']}</div>
+<div style="font-size:12px; color:#666; margin-bottom:5px;">📍 {item['Address']}</div>
+<div class="card-offer">🔥 {item['Offer']}</div>
+<div class="btn-row">
+{btns}
+</div>
+</div>
+</div>
+"""
+                    st.markdown(card_html, unsafe_allow_html=True)
 
 elif st.session_state['page'] == 'add':
-    st.title("📝 Business List Karein")
-    with st.form("biz_form"):
-        name = st.text_input("Business Name")
-        cat = st.selectbox("Category", ["Food", "Fashion", "Services", "Education", "Real Estate"])
-        offer = st.text_input("Offer / Tagline")
-        phone = st.text_input("Mobile Number")
-        address = st.text_input("Area/Location")
-        img = "https://source.unsplash.com/800x600/?" + cat # Auto image
+    
+    # --- ADD LISTING PAGE ---
+    st.title("📝 List Your Business")
+    st.info("Apni dukan ko online layein. Form bharein:")
+    
+    with st.form("add_form"):
+        col1, col2 = st.columns(2)
+        name = col1.text_input("Business Name *")
+        cat = col2.selectbox("Category *", ["Food", "Fashion", "Services", "Education", "Real Estate"])
         
-        plan = st.radio("Plan", ["Free (Locked)", "Premium (Unlocked - Paid)"])
+        offer = st.text_input("Aaj ka Offer / Tagline *")
         
-        if st.form_submit_button("🚀 Submit"):
-            if name and phone:
-                # Prepare Data for Google Sheet
-                new_data = {
-                    "Name": name, "Category": cat, "Offer": offer,
-                    "Phone": phone, "Address": address,
+        c3, c4 = st.columns(2)
+        phone = c3.text_input("Mobile Number *")
+        address = c4.text_input("Short Address (Area)")
+        
+        st.markdown("---")
+        st.write("📸 **Business Image**")
+        
+        # Image Logic: Auto or Link
+        img_option = st.radio("Image kaise lagani hai?", ["Auto-Generate (Best for Speed)", "Image Link (URL)"])
+        
+        final_img_url = ""
+        if img_option == "Auto-Generate (Best for Speed)":
+            st.caption(f"Hum '{cat}' category ke hisab se ek badhiya photo laga denge.")
+            final_img_url = "https://source.unsplash.com/800x600/?" + cat
+        else:
+            final_img_url = st.text_input("Apni Photo ka Link yahan paste karein:")
+            
+        st.markdown("---")
+        plan = st.radio("Visibility Plan", ["Free (Locked Contacts)", "Premium (Visible Contacts - ₹499)"])
+        
+        submit = st.form_submit_button("🚀 Submit Listing")
+        
+        if submit:
+            if name and phone and offer:
+                # Prepare Data
+                new_entry = {
+                    "Name": name,
+                    "Category": cat,
+                    "Offer": offer,
+                    "Phone": phone,
+                    "Address": address,
                     "Premium": "TRUE" if "Premium" in plan else "FALSE",
-                    "Image": img
+                    "Image": final_img_url if final_img_url else "https://source.unsplash.com/800x600/?shop"
                 }
                 
-                with st.spinner("Saving to Database..."):
-                    try:
-                        add_to_db(new_data)
-                        st.success("Listing Save Ho Gayi! Home page par jaa rahe hain...")
-                        st.session_state['page'] = 'home'
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error: {e}. (Shayad Secrets set nahi hain)")
+                with st.spinner("Saving..."):
+                    add_to_db(new_entry)
+                    st.success("Business List Ho Gaya! 🎉")
+                    st.session_state['page'] = 'home'
+                    st.rerun()
+            else:
+                st.error("Please * wale fields zaroor bharein.")
