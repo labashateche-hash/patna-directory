@@ -1,158 +1,146 @@
 import streamlit as st
 
-# 1. Page Config (Sabse pehle ye line honi chahiye)
+# 1. PAGE CONFIG
 st.set_page_config(page_title="Patna City Guide", page_icon="🏙️", layout="wide")
 
-# 2. Custom CSS (Makeover Kit)
+# 2. CUSTOM CSS (Design + Locked Effect)
 st.markdown("""
 <style>
-    /* Background Color */
-    .stApp {
-        background-color: #f4f7f6;
-    }
+    /* Background */
+    .stApp {background-color: #f4f7f6;}
     
-    /* Hide Streamlit Elements */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Navbar Style */
+    /* Navbar */
     .navbar {
-        background-color: #2c3e50;
-        padding: 15px;
-        color: white;
-        text-align: center;
-        font-size: 24px;
-        font-weight: bold;
-        border-bottom: 4px solid #e74c3c;
-        margin-bottom: 20px;
-        border-radius: 0 0 10px 10px;
+        background-color: #2c3e50; padding: 15px; color: white;
+        text-align: center; font-size: 24px; font-weight: bold;
+        border-bottom: 4px solid #e74c3c; margin-bottom: 20px; border-radius: 0 0 10px 10px;
     }
     
-    /* Card Design (Pinterest Style) */
+    /* Card Styles */
     .business-card {
-        background-color: white;
-        border-radius: 15px;
-        padding: 0px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        transition: transform 0.3s;
-        margin-bottom: 20px;
-        overflow: hidden;
+        background-color: white; border-radius: 15px; padding: 0px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden;
     }
-    .business-card:hover {
-        transform: translateY(-5px); /* Mouse aane par upar uthega */
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    }
+    .card-img {width: 100%; height: 200px; object-fit: cover;}
+    .card-body {padding: 15px;}
+    .card-title {font-size: 18px; font-weight: bold; color: #2c3e50; margin: 0;}
+    .card-offer {color: #e74c3c; font-weight: bold; font-size: 14px;}
     
-    /* Card Image */
-    .card-img {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-    }
+    /* BUTTON STYLES */
+    .btn-container {display: flex; justify-content: space-between; padding: 15px; border-top: 1px solid #eee;}
     
-    /* Card Content */
-    .card-body {
-        padding: 15px;
-    }
-    .card-title {
-        font-size: 18px;
-        font-weight: bold;
-        color: #2c3e50;
-        margin: 0;
-    }
-    .card-offer {
-        color: #e74c3c;
-        font-weight: bold;
-        font-size: 14px;
-        margin-top: 5px;
-    }
-    .card-text {
-        font-size: 13px;
-        color: #7f8c8d;
-        margin-top: 5px;
-    }
+    /* Premium Buttons (Working) */
+    .btn-call {background-color: #3498db; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold;}
+    .btn-wa {background-color: #27ae60; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold;}
     
-    /* Action Buttons */
-    .btn-container {
-        display: flex;
-        justify-content: space-between;
-        padding: 15px;
-        border-top: 1px solid #eee;
-    }
-    .btn-call {
-        background-color: #3498db;
-        color: white;
-        text-decoration: none;
-        padding: 8px 15px;
-        border-radius: 5px;
-        font-size: 14px;
-        font-weight: bold;
-    }
-    .btn-wa {
-        background-color: #27ae60;
-        color: white;
-        text-decoration: none;
-        padding: 8px 15px;
-        border-radius: 5px;
-        font-size: 14px;
-        font-weight: bold;
+    /* Locked Buttons (Not Working) */
+    .btn-locked {
+        background-color: #95a5a6; color: white; padding: 8px 15px; 
+        border-radius: 5px; text-decoration: none; font-weight: bold; cursor: not-allowed;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. HTML Navbar
-st.markdown('<div class="navbar">🏙️ PATNA PRIME DIRECTORY</div>', unsafe_allow_html=True)
+# 3. DATABASE (Session State)
+if 'businesses' not in st.session_state:
+    st.session_state['businesses'] = [
+        # Premium User (Buttons Khule hain)
+        {"name": "Royal Furniture", "offer": "Sofa 40% Off", "cat": "Home", "img": "https://source.unsplash.com/600x400/?sofa", "phone": "9199999999", "premium": True},
+        # Free User (Buttons Locked hain)
+        {"name": "Raju Tea Stall", "offer": "Special Masala Chai", "cat": "Food", "img": "https://source.unsplash.com/600x400/?tea", "phone": "9188888888", "premium": False},
+        # Premium User
+        {"name": "Tech Master", "offer": "Mobile Repair @ 999", "cat": "Services", "img": "https://source.unsplash.com/600x400/?repair", "phone": "9177777777", "premium": True},
+    ]
 
-# 4. Hero Section (Banner)
-st.markdown("""
-<div style="background-image: url('https://source.unsplash.com/1600x400/?market,shopping'); background-size: cover; padding: 60px; text-align: center; border-radius: 15px; color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px #000;">
-    <h1 style="margin:0; font-size: 50px;">Patna's Best Offers</h1>
-    <p style="font-size: 20px;">Dukan wahi, offer naya!</p>
-</div>
-""", unsafe_allow_html=True)
+# 4. SIDEBAR MENU (Yahan se navigation hoga)
+st.sidebar.title("Menu ☰")
+menu = st.sidebar.radio("Go to:", ["🏠 Home (Customers)", "📝 List Your Business (Dukandaar)"])
 
-# 5. Business Data (Database)
-businesses = [
-    {"name": "Royal Furniture House", "offer": "Dining Table par 40% Off", "cat": "Home", "img": "https://source.unsplash.com/600x400/?sofa", "phone": "9199999999"},
-    {"name": "Patna Bakers Point", "offer": "Buy 1 Get 1 Free Pastry", "cat": "Food", "img": "https://source.unsplash.com/600x400/?cake", "phone": "9188888888"},
-    {"name": "Tech Master Repair", "offer": "Mobile Screen @ ₹999", "cat": "Services", "img": "https://source.unsplash.com/600x400/?mobile,repair", "phone": "9177777777"},
-    {"name": "Style Men's Wear", "offer": "Jeans + Shirt Combo ₹1200", "cat": "Fashion", "img": "https://source.unsplash.com/600x400/?jeans", "phone": "9166666666"},
-    {"name": "Fit Gym & Spa", "offer": "Yearly Membership 50% Off", "cat": "Services", "img": "https://source.unsplash.com/600x400/?gym", "phone": "9155555555"},
-    {"name": "Bihar Sweets", "offer": "Desi Ghee Ladoo Special", "cat": "Food", "img": "https://source.unsplash.com/600x400/?sweets", "phone": "9144444444"},
-]
+# ==========================================
+# PAGE 1: HOME (Customer View)
+# ==========================================
+if menu == "🏠 Home (Customers)":
+    # Header
+    st.markdown('<div class="navbar">🏙️ PATNA PRIME DIRECTORY</div>', unsafe_allow_html=True)
+    
+    # Filters
+    col_s1, col_s2 = st.columns([3, 1])
+    with col_s1:
+        search = st.text_input("🔍 Search Offers...")
+    with col_s2:
+        cat_filter = st.selectbox("Category", ["All", "Food", "Services", "Home", "Fashion"])
 
-# 6. Filter Section
-col_s1, col_s2 = st.columns([3, 1])
-with col_s1:
-    search = st.text_input("🔍 Search (e.g., Cake, Sofa)")
-with col_s2:
-    category = st.selectbox("Category", ["All", "Food", "Fashion", "Services", "Home"])
+    # Display Logic
+    col1, col2, col3 = st.columns(3)
+    cols = [col1, col2, col3]
+    
+    for i, bus in enumerate(st.session_state['businesses']):
+        if cat_filter == "All" or cat_filter == bus['cat']:
+             if search.lower() in bus['name'].lower() or search.lower() in bus['offer'].lower():
+                with cols[i % 3]:
+                    
+                    # Logic: Agar Premium hai to Link banega, nahi to '#' (kahin nahi jayega)
+                    if bus['premium']:
+                        call_btn = f'<a href="tel:{bus["phone"]}" class="btn-call">📞 Call Now</a>'
+                        wa_btn = f'<a href="https://wa.me/{bus["phone"]}" class="btn-wa">💬 WhatsApp</a>'
+                        badge = "⭐ Premium Verified"
+                    else:
+                        call_btn = f'<span class="btn-locked">🔒 Locked</span>'
+                        wa_btn = f'<span class="btn-locked">🔒 Premium Only</span>'
+                        badge = "Basic Listing"
 
-st.markdown("---")
+                    # HTML Card
+                    html = f"""
+                    <div class="business-card">
+                        <img src="{bus['img']}" class="card-img">
+                        <div class="card-body">
+                            <div class="card-title">{bus['name']}</div>
+                            <div style="font-size:12px; color:gray;">{badge}</div>
+                            <div class="card-offer">🔥 {bus['offer']}</div>
+                        </div>
+                        <div class="btn-container">
+                            {call_btn}
+                            {wa_btn}
+                        </div>
+                    </div>
+                    """
+                    st.markdown(html, unsafe_allow_html=True)
 
-# 7. MAIN GRID DISPLAY (HTML Injection for Style)
-col1, col2, col3 = st.columns(3)
-cols = [col1, col2, col3]
-
-for i, bus in enumerate(businesses):
-    if category == "All" or category == bus['cat']:
-        if search.lower() in bus['name'].lower() or search.lower() in bus['offer'].lower():
+# ==========================================
+# PAGE 2: LIST BUSINESS (Dukandaar Form)
+# ==========================================
+elif menu == "📝 List Your Business (Dukandaar)":
+    st.title("🚀 Apna Business Online Karein")
+    st.write("Apne dukan ki details niche bharein aur customers payein.")
+    
+    with st.form("add_biz_form"):
+        name = st.text_input("Business Name")
+        cat = st.selectbox("Category", ["Food", "Fashion", "Services", "Home"])
+        offer = st.text_input("Aaj ka Offer (e.g., 50% Off)")
+        phone = st.text_input("WhatsApp Number")
+        img_url = "https://source.unsplash.com/600x400/?shop" # Auto image for demo
+        
+        st.markdown("---")
+        st.subheader("Plan Chuniye 👇")
+        plan = st.radio("Visibility Plan:", ["FREE (Contact Locked 🔒)", "PREMIUM (Contact Visible ⭐) - ₹99/month"])
+        
+        submitted = st.form_submit_button("Submit Listing")
+        
+        if submitted:
+            is_premium = True if "PREMIUM" in plan else False
             
-            with cols[i % 3]:
-                # HTML Card Creation
-                html_card = f"""
-                <div class="business-card">
-                    <img src="{bus['img']}" class="card-img">
-                    <div class="card-body">
-                        <div class="card-title">{bus['name']}</div>
-                        <div class="card-offer">🔥 {bus['offer']}</div>
-                        <div class="card-text">📍 Patna • Verified Listing ✅</div>
-                    </div>
-                    <div class="btn-container">
-                        <a href="tel:{bus['phone']}" class="btn-call">📞 Call Now</a>
-                        <a href="https://wa.me/{bus['phone']}" class="btn-wa">💬 WhatsApp</a>
-                    </div>
-                </div>
-                """
-                st.markdown(html_card, unsafe_allow_html=True)
+            new_biz = {
+                "name": name,
+                "offer": offer,
+                "cat": cat,
+                "img": img_url,
+                "phone": phone,
+                "premium": is_premium
+            }
+            st.session_state['businesses'].append(new_biz)
+            
+            if is_premium:
+                st.balloons()
+                st.success("✅ Payment Successful! Aapka Premium Ad Live ho gaya hai.")
+            else:
+                st.info("⚠️ Aapka Free Ad Live ho gaya. (Note: Customers apko call nahi kar payenge).")
